@@ -1,0 +1,11 @@
+main.m : main function to do random sampling, exact solutions and create all plots
+dtlz2.m : function to calculate dtlz2 of a set of parameters
+distinguishable_colors.m : function that returns distinct colours
+paretoFront.m : function to calculate Pareto front from a set of points
+
+dtlz2_single_processor.c : code that contains dtlz2 and calls the borg function to optimize dtlz2 multiple times (you can change number of parameters/objectives/iterations/repetitions in here)
+To compile this you will need to acquire borg.c/h and mt19937ar.c/h from http://borgmoea.org/
+
+.out files : these are borg solutions to dtlz2 (you can recreate them by running dtlz2_single_processor.c once it is compiled)
+
+Hypervolume_MEX.mexw64 : the mex code to calculate hypervolume for windows 64. The source code for this including for alternative operating systems can be found at http://lopez-ibanez.eu/hypervolume 
