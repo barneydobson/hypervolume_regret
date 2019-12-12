@@ -105,12 +105,22 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &worldRank);
 
 	int i, j, k;
-	int numWeights, numFramings = 3;
+	int numWeights, numFramings = 6;
+	//-------------------------------------------------------------------//
+	//
+	// Framing 1 : AR0 - Low reliability threshold
+	// Framing 2 : AR1 - Low reliability threshold
+	// Framing 3 : AR2 - Low reliability threshold
+	// Framing 4 : AR0 - High reliability threshold
+	// Framing 5 : AR1 - High reliability threshold
+	// Framing 6 : AR2 - High reliability threshold
+	//
+	//-------------------------------------------------------------------//
+
 	int framingsIncluded[3] = {1,2,3};
 	char framStr[100];
 	// sprintf(framStr,"framings_%d_%d_%d_%d",framingsIncluded[0],framingsIncluded[1],framingsIncluded[2],framingsIncluded[3]);
 	sprintf(framStr,"framing%d",numFramings+1);
-	int simType = 0;	
 	//-------------------------------------------------------------------//
 	// Setup 
 	//-------------------------------------------------------------------//
@@ -119,30 +129,17 @@ int main(int argc, char* argv[]) {
 	myEnsemble.ensembleT = 2;
 	myEnsemble.baseSeed = 1;
 	myEnsemble.percentile = 1;
-	myEnsemble.simulationType = simType; //0 = cooperative, 1 = c2 only, 2 = c1 only, 4 = un-cooperative
+	myEnsemble.simulationType = 0; //0 = cooperative
 	createEnsemble(&myEnsemble, framingsIncluded[0]);	
 	numWeights = myEnsemble.ensemble[0]->cooperativeNet->numWeights;
 	int numObjectives = myEnsemble.ensemble[0]->numObjectives;
 	double *epsilons = calloc(numObjectives,sizeof(double));
-	double *epsilonUB = calloc(numObjectives,sizeof(double));
-	double *epsilonLB = calloc(numObjectives,sizeof(double));
-	char epstrIni[100];
 	
-	epsilons[0] = 0.11; // 
-	epsilons[1] = 0.17; // 
+	epsilons[0] = 0.11;
+	epsilons[1] = 0.17;
 	epsilons[2] = 1.3; 
 	epsilons[3] = 9; 
-	
-	epsilonUB[0] = epsilons[0]*30;
-	epsilonUB[1] = epsilons[1]*30;
-	epsilonUB[2] = epsilons[2]*30;
-	epsilonUB[3] = epsilons[3]*30;
-	
-	epsilonLB[0] = epsilons[0]/10;
-	epsilonLB[1] = epsilons[1]/10;
-	epsilonLB[2] = epsilons[2]/10;
-	epsilonLB[3] = epsilons[3]/10;
-	
+
 	sprintf(epstrIni,"%f_%f_%f_%f",epsilons[0],epsilons[1],epsilons[2],epsilons[3]);
 			
 	int NFE, NRandom, nseeds;
@@ -151,7 +148,7 @@ int main(int argc, char* argv[]) {
 	struct timeval tv1, tv2;
 	struct rusage ru_before, ru_after;
 	int ensembleSizePerFraming = 134;
-	int ensembleT = 30000;
+	int ensembleT = 1000;
 	int baseSeed = masterSeed;
 	int percentile = 1;
 	//-------------------------------------------------------------------//
@@ -160,15 +157,15 @@ int main(int argc, char* argv[]) {
 	// Run actual optimization
 	//-------------------------------------------------------------------//
 	struct fexEnsemble combinedEnsemble = createMultiFramingEnsemble(numFramings, framingsIncluded, ensembleSizePerFraming, ensembleT, baseSeed, percentile, simType);
-	NRandom = 100000;
-	
+	NRandom = 1000;
+	NFE = 1000;
 	
 	srand(1);
 	for (i = 0; i < combinedEnsemble.ensembleSize; i++)
 	{
 		combinedEnsemble.ensemble[i]->seed = rand();
 	}
-	NFE = 100000;
+	
 	
 	problem = BORG_Problem_create(numWeights, numObjectives, 0, evaluateEnsembleMean, &combinedEnsemble);
 	for (i=0; i<numWeights; i++) {
@@ -192,8 +189,7 @@ int main(int argc, char* argv[]) {
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 	BORG_Problem_destroy(problem);
-	MPI_Finalize();
-	return EXIT_SUCCESS;
+
 	//-------------------------------------------------------------------//
 	// Run fex with random weights (to show benefits of optimization) - maybe print only the paretofront please (to epsilon?)
 	//-------------------------------------------------------------------//
@@ -309,6 +305,7 @@ int main(int argc, char* argv[]) {
 	
 	MPI_Finalize();
 	return EXIT_SUCCESS;
+
 	//-------------------------------------------------------------------//
 	// Run multiseed optimization
 	//-------------------------------------------------------------------//
@@ -413,7 +410,7 @@ int main(int argc, char* argv[]) {
 	BORG_Problem_destroy(problem);
 	destroyEnsemble(&multiEpsEnsemble);
 	
-//-------------------------------------------------------------------//
+	//-------------------------------------------------------------------//
 	// Check convergence of objectives 
 	// NOTE THIS IS CURRENTLY ONLY SET UP FOR AN ENSEMBLE SIZE OF 1 - EACH TIME A DIFFERENT SET OF RANDOM WEIGHTS IS EVALUATED, THE POINTER OF THE ENSEMBLE UNDER EVALUATION IS SWITCHED TO THE NRANDOM INDEX (J)
 	// IF YOU WANT TO USE A LARGER ENSEMBLESIZE THAN 1 YOU HAVE TWO OPTIONS:

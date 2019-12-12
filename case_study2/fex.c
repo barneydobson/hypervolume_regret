@@ -529,17 +529,21 @@ void createEnsemble(struct fexEnsemble *myEnsemble, int framing)
 
 	char parmaFid[256];
 	char choleskyFid[256];
-	if (framing == 1 )
+	if ((framing == 1) || (framing == 4))
 	{
 		sprintf(parmaFid,"parma00.arma");
 		sprintf(choleskyFid,"cholesky00.arma");
+	}
+	else if ((framing == 2) || (framing == 5))
+	{
+		sprintf(parmaFid,"parma10.arma");
+		sprintf(choleskyFid,"cholesky10.arma");
 	}
 	else
 	{
 		sprintf(parmaFid,"parma20.arma");
 		sprintf(choleskyFid,"cholesky20.arma");
 	}
-	
 	//edit: 18/05/18 - Add variable storage threshold
 	char s2ThetaFid[256];
 	char s1ThetaFid[256];
@@ -584,32 +588,17 @@ void createEnsemble(struct fexEnsemble *myEnsemble, int framing)
 	//endedit
 
 	/// --------------- BREAK PARAMETERS --------------- ///
-	if (framing == 4)
-	{
-		myEnsemble->breakLambdaProbabilityS2D2[0] = 0; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityS2D2[1] = 1000000000000; //lambda for poisson duration between break
-		myEnsemble->breakLambdaProbabilityS1D2[0] = 0; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityS1D2[1] = 1000000000000; //lambda for poisson duration between break
-		myEnsemble->breakLambdaProbabilityR1S1[0] = 0; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityR1S1[1] = 1000000000000; //lambda for poisson duration between break
-		myEnsemble->breakLambdaProbabilityS1R1[0] = 0; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityS1R1[1] = 1000000000000; //lambda for poisson duration between break
-		myEnsemble->breakLambdaProbabilityBorehole[0] = 0; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityBorehole[1] = 1000000000000; //lambda for poisson duration between break
-	}
-	else
-	{
-		myEnsemble->breakLambdaProbabilityS2D2[0] = 5; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityS2D2[1] = 800; //lambda for poisson duration between break
-		myEnsemble->breakLambdaProbabilityS1D2[0] = 3; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityS1D2[1] = 300; //lambda for poisson duration between break
-		myEnsemble->breakLambdaProbabilityR1S1[0] = 3; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityR1S1[1] = 300; //lambda for poisson duration between break
-		myEnsemble->breakLambdaProbabilityS1R1[0] = 0; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityS1R1[1] = 0; //lambda for poisson duration between break
-		myEnsemble->breakLambdaProbabilityBorehole[0] = 3; //lambda for poisson duration of break
-		myEnsemble->breakLambdaProbabilityBorehole[1] = 500; //lambda for poisson duration between break
-	}
+	// we assume no breaks can occur
+	myEnsemble->breakLambdaProbabilityS2D2[0] = 0; //lambda for poisson duration of break
+	myEnsemble->breakLambdaProbabilityS2D2[1] = 1000000000000; //lambda for poisson duration between break
+	myEnsemble->breakLambdaProbabilityS1D2[0] = 0; //lambda for poisson duration of break
+	myEnsemble->breakLambdaProbabilityS1D2[1] = 1000000000000; //lambda for poisson duration between break
+	myEnsemble->breakLambdaProbabilityR1S1[0] = 0; //lambda for poisson duration of break
+	myEnsemble->breakLambdaProbabilityR1S1[1] = 1000000000000; //lambda for poisson duration between break
+	myEnsemble->breakLambdaProbabilityS1R1[0] = 0; //lambda for poisson duration of break
+	myEnsemble->breakLambdaProbabilityS1R1[1] = 1000000000000; //lambda for poisson duration between break
+	myEnsemble->breakLambdaProbabilityBorehole[0] = 0; //lambda for poisson duration of break
+	myEnsemble->breakLambdaProbabilityBorehole[1] = 1000000000000; //lambda for poisson duration between break
 	/// ------------------------------------------------ ///
 
 	
@@ -617,16 +606,8 @@ void createEnsemble(struct fexEnsemble *myEnsemble, int framing)
 	
 	//s1FisheriesAnnual will be uniformly released over a random length between min/maxDailyFishRelease during start/endAllowableFishReleaseDoy
 	myEnsemble->s1FisheriesAnnual = 900; //Ml/y
-	if (framing == 4)
-	{
-		myEnsemble->startAllowableFishReleaseDoy = 60; //i.e. March 1
-		myEnsemble->endAllowableFishReleaseDoy = 365; //i.e. Dec 31
-	}
-	else
-	{
-		myEnsemble->startAllowableFishReleaseDoy = 244; //i.e. Sept 1
-		myEnsemble->endAllowableFishReleaseDoy = 273; //i.e. Sept 31	
-	}
+	myEnsemble->startAllowableFishReleaseDoy = 60; //i.e. March 1
+	myEnsemble->endAllowableFishReleaseDoy = 365; //i.e. Dec 31
 	myEnsemble->maxFishReleaseLength = 14; //Entire annual allowance must be released over a maximum of 14 consecutive days
 	myEnsemble->maxDailyFishRelease = 360; //Ml/d - note- that since this isn't divisible by 900, the actual max is 300
 	myEnsemble->minFishReleaseLength = (int)ceil(myEnsemble->s1FisheriesAnnual/myEnsemble->maxDailyFishRelease);
@@ -1019,7 +1000,7 @@ void simFex(double* weights, double* objs, double* consts,struct fexProblem *myF
 	}		
 		//edit: 18/05/18 - Add variable storage threshold
 	double reliabilityMod = 1;
-	if (myFex->parent->framing == 3)
+	if (myFex->parent->framing < 4)
 	{
 		reliabilityMod = 0.5;
 	}
